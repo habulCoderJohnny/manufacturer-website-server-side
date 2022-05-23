@@ -3,7 +3,7 @@ const app = express()
 const cors = require('cors');
 require('dotenv').config();
 const port = process.env.PORT || 5000;
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
 
 app.use(cors());
@@ -30,9 +30,17 @@ async function run() {
       res.send(equitments);
     });
 
+    //Get Individual data using Id 
+    app.get('/equitment/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const equitment = await partsCollection.findOne(query);
+      res.send(equitment);
+    });
+
   }
   finally {
-    
+
   }
 
 
