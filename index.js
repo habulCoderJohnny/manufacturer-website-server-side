@@ -22,6 +22,7 @@ async function run() {
     // console.log('db connected!!');
     const partsCollection = client.db("fish-zone").collection("equitments");
     const orderCollection = client.db("fish-zone").collection("orders");
+    const reviewCollection = client.db("fish-zone").collection("reviews");
 
     //GET DATA myOWN Inserted DATA
     app.get('/equitment', async (req, res) => {
@@ -52,14 +53,14 @@ async function run() {
       return res.send({ success: true, result });
     })
 
-    //find user Individual order Find using email
+    //find user Individual order Find using email 
     app.get('/order', async (req, res) => {
       const email = req.query.email;
       const query = { email: email };
       const orderShow = await orderCollection.find(query).toArray();
       res.send(orderShow);
     })
-    
+
     //Delete user Individual order data using email
     app.delete('/parts/:email', async (req, res) => {
       const email = req.params.email;
@@ -67,6 +68,22 @@ async function run() {
       const result = await orderCollection.deleteOne(filter);
       res.send(result);
     })
+
+    //GET review myOWN Inserted DATA
+    app.get('/review', async (req, res) => {
+      const query = {};
+      const cursor = reviewCollection.find(query);
+      const reviews = await cursor.toArray();
+      res.send(reviews);
+    });
+
+
+    //Customer review Stored
+    app.post('/review', async (req, res) => {
+      const reviews = req.body;
+      const result = await reviewCollection.insertOne(reviews);
+      res.send(result);
+    });
 
 
   }
