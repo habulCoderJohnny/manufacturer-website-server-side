@@ -52,6 +52,22 @@ async function run() {
       return res.send({ success: true, result });
     })
 
+    //find user Individual order Find using email
+    app.get('/order', async (req, res) => {
+      const email = req.query.email;
+      const query = { email: email };
+      const orderShow = await orderCollection.find(query).toArray();
+      res.send(orderShow);
+    })
+    
+    //Delete user Individual order data using email
+    app.delete('/parts/:email', async (req, res) => {
+      const email = req.params.email;
+      const filter = { email: email };
+      const result = await orderCollection.deleteOne(filter);
+      res.send(result);
+    })
+
 
   }
   finally {
