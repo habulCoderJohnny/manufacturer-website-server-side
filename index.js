@@ -21,6 +21,7 @@ async function run() {
     await client.connect();
     // console.log('db connected!!');
     const partsCollection = client.db("fish-zone").collection("equitments");
+    const orderCollection = client.db("fish-zone").collection("orders");
 
     //GET DATA myOWN Inserted DATA
     app.get('/equitment', async (req, res) => {
@@ -30,13 +31,27 @@ async function run() {
       res.send(equitments);
     });
 
-    //Get Individual data using Id 
+    //Sent Individual data using Id 
     app.get('/equitment/:id', async (req, res) => {
       const id = req.params.id;
       const query = { _id: ObjectId(id) };
       const equitment = await partsCollection.findOne(query);
       res.send(equitment);
     });
+    //Inserted Individual Order data
+    app.post('/order', async (req, res) => {
+      const orders = req.body;
+      //Limit one order per user per product 
+      //(duplicate restricted)
+      const query = { name: orders.name, email: orders.email }
+      const existOrder = await orderCollection.findOne(query);
+      if (existOrder) {
+        return res.send({ success: false, orders: existOrder });
+      }
+      const result = await orderCollection.insertOne(orders);
+      return res.send({ success: true, result });
+    })
+
 
   }
   finally {
