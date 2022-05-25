@@ -23,6 +23,7 @@ async function run() {
     const partsCollection = client.db("fish-zone").collection("equitments");
     const orderCollection = client.db("fish-zone").collection("orders");
     const reviewCollection = client.db("fish-zone").collection("reviews");
+    const userCollection = client.db("fish-zone").collection("users");
 
     //GET DATA myOWN Inserted DATA
     app.get('/equitment', async (req, res) => {
@@ -84,6 +85,20 @@ async function run() {
       const result = await reviewCollection.insertOne(reviews);
       res.send(result);
     });
+
+    //all user in database
+    app.put('/user/:email', async (req, res) => {
+      const email = req.params.email;
+      const user = req.body;
+      const filter = { email: email };
+      const options = { upsert: true };
+      const updateDoc = {
+        $set: user,
+      };
+      const result = await userCollection.updateOne(filter, updateDoc, options);
+      res.send(result);
+    });
+
 
 
   }

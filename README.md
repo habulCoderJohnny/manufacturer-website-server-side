@@ -1,7 +1,7 @@
 # Manufacturer Website
 ## Project name: Huntor Fishzone
 
-Click here for the Server side repo: [https://github.com/programming-hero-web-course1/manufacturer-website-client-side-habulCoderJohnny](https://github.com/programming-hero-web-course1/manufacturer-website-client-side-habulCoderJohnny)
+Click here for the Clint side repo: [https://github.com/programming-hero-web-course1/manufacturer-website-client-side-habulCoderJohnny](https://github.com/programming-hero-web-course1/manufacturer-website-client-side-habulCoderJohnny)
 
 I try to made a Manufactural website. I will be using React for the front-end and Node Express for the back-end. The styling part will be done using CSS and React Tailwind while the functionality will be added using JSX. I plan on making it as user-friendly as possible.
 
