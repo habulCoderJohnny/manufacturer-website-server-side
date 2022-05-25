@@ -1,6 +1,7 @@
 const express = require('express')
 const app = express()
 const cors = require('cors');
+const jwt = require('jsonwebtoken');
 require('dotenv').config();
 const port = process.env.PORT || 5000;
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
@@ -14,6 +15,27 @@ const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster
 // console.log(uri);
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
+//Middleware
+//jwt-token-to-backend-for-Verification
+function verifiedToken(req, res, next) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    //console.log('ABC');
+    return res.status(401).send({ message: 'UnAuthorized access! Kire tor token koi? Its not ur data!' });
+  }
+
+  //Iqnore Bearer
+  const token = authHeader.split(' ')[1];
+  // VERIFY user-token of 
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, function (err, decoded) {
+    if (err) {
+      return res.status(403).send({ message: 'Forbidden! Access denied.' })
+    } //Decoded valid user representor
+    req.decoded = decoded;
+    //console.log(decoded);
+    next();
+  });
+}
 
 
 async function run() {
@@ -40,12 +62,13 @@ async function run() {
       const equitment = await partsCollection.findOne(query);
       res.send(equitment);
     });
+    
     //Inserted Individual Order data
     app.post('/order', async (req, res) => {
       const orders = req.body;
       //Limit one order per user per product 
       //(duplicate restricted)
-      const query = { name: orders.name, email: orders.email }
+      const query = { name: orders.name, customerMail: orders.customerMail }
       const existOrder = await orderCollection.findOne(query);
       if (existOrder) {
         return res.send({ success: false, orders: existOrder });
@@ -55,15 +78,21 @@ async function run() {
     })
 
     //find user Individual order Find using email 
-    app.get('/order', async (req, res) => {
-      const email = req.query.email;
-      const query = { email: email };
-      const orderShow = await orderCollection.find(query).toArray();
-      res.send(orderShow);
+    app.get('/order', [verifiedToken], async (req, res) => {
+      const customerMail = req.query.customerMail;
+      const decodedEmail = req.decoded.email;
+      if (customerMail === decodedEmail) {
+        const query = { customerMail: customerMail };
+        const orderShow = await orderCollection.find(query).toArray();
+        res.send(orderShow);
+      }
+      else {
+        return res.status(403).send({ message: "forbidden, Its not your cup of Tea" })
+      }
     })
 
     //Delete user Individual order data using email
-    app.delete('/parts/:email', async (req, res) => {
+    app.delete('/parts/:email', [verifiedToken], async (req, res) => {
       const email = req.params.email;
       const filter = { email: email };
       const result = await orderCollection.deleteOne(filter);
@@ -71,7 +100,7 @@ async function run() {
     })
 
     //GET review myOWN Inserted DATA
-    app.get('/review', async (req, res) => {
+    app.get('/review', [verifiedToken],async (req, res) => {
       const query = {};
       const cursor = reviewCollection.find(query);
       const reviews = await cursor.toArray();
@@ -80,13 +109,13 @@ async function run() {
 
 
     //Customer review Stored
-    app.post('/review', async (req, res) => {
+    app.post('/review',[verifiedToken], async (req, res) => {
       const reviews = req.body;
       const result = await reviewCollection.insertOne(reviews);
       res.send(result);
     });
 
-    //all user in database
+    //all user in database | implementToken
     app.put('/user/:email', async (req, res) => {
       const email = req.params.email;
       const user = req.body;
@@ -96,9 +125,12 @@ async function run() {
         $set: user,
       };
       const result = await userCollection.updateOne(filter, updateDoc, options);
+     
       res.send(result);
     });
 
+
+    
 
 
   }
