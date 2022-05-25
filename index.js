@@ -4,7 +4,7 @@ const cors = require('cors');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
 const port = process.env.PORT || 5000;
-const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId, Admin } = require('mongodb');
 
 
 app.use(cors());
@@ -127,6 +127,23 @@ async function run() {
       const result = await userCollection.updateOne(filter, updateDoc, options);
       const token = jwt.sign({ email: email }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' }) //Jwt token issue-1st then>Verify
       res.send({ result, token });
+    });
+
+    //OUR ALL USER INFO API 
+    app.get('/users', [verifiedToken], async (req, res) => {
+      const users = await userCollection.find().toArray();
+      res.send(users);
+    })
+
+    // Given role:Admin on user 
+    app.put('/user/admin/:email',[verifiedToken], async (req, res) => {
+      const email = req.params.email;
+      const filter = { email: email };
+      const updateDoc = {
+        $set: { role: 'admin' },
+      };
+      const result = await userCollection.updateOne(filter, updateDoc);
+      res.send(result);
     });
 
 
