@@ -47,6 +47,7 @@ async function run() {
     const orderCollection = client.db("fish-zone").collection("orders");
     const reviewCollection = client.db("fish-zone").collection("reviews");
     const userCollection = client.db("fish-zone").collection("users");
+    const profileCollection = client.db("fish-zone").collection("profiles");
     const paymentCollection = client.db("fish-zone").collection("payments");
     
 
@@ -82,20 +83,14 @@ async function run() {
     //Inserted Individual Order data
     app.post('/order', async (req, res) => {
       const orders = req.body;
-     /*  Limit one order per user per product 
-      const query = { name: orders.name, customerMail: orders.customerMail }
-      const existOrder = await orderCollection.findOne(query);
-      if (existOrder) {
-        return res.send({ success: false, orders: existOrder });
-      } */
       const result = await orderCollection.insertOne(orders);
       return res.send({ success: true, result });
     })
 
     //find user Individual order Find using email 
-    app.get('/order', [verifiedToken], async (req, res) => {
-      const customerMail = req.query.customerMail;
-      const decodedEmail = req.decoded.email;
+    app.get('/order', async (req, res) => {
+      const customerMail = req?.query?.customerMail;
+      const decodedEmail = req?.decoded?.email;
       if (customerMail === decodedEmail) {
         const query = { customerMail: customerMail };
         const orderShow = await orderCollection.find(query).toArray();
@@ -131,7 +126,7 @@ async function run() {
     });
 
     //Add product
-    app.post('/equitment',  async (req, res) => {
+    app.post('/equitment', [verifiedAdmin],  async (req, res) => {
       const addProduct = req.body;
       const result = await partsCollection.insertOne(addProduct);
       res.send(result);
@@ -152,10 +147,18 @@ async function run() {
     });
 
     //OUR ALL USER INFO API 
-    app.get('/users', [verifiedToken], async (req, res) => {
+    app.get('/users', [verifiedToken,verifiedAdmin], async (req, res) => {
       const users = await userCollection.find().toArray();
       res.send(users);
     })
+
+
+     //Profile data stored
+     app.post('/profile', verifiedToken, async (req, res) => {
+      const profileInfo = req.body;
+      const result = await profileCollection.insertOne(profileInfo);
+      res.send(result);
+    });
 
     // Given role:Admin on user 
     app.put('/user/admin/:email',[verifiedToken, verifiedAdmin], async (req, res) => {
