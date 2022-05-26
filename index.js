@@ -47,6 +47,19 @@ async function run() {
     const reviewCollection = client.db("fish-zone").collection("reviews");
     const userCollection = client.db("fish-zone").collection("users");
 
+    //Middleware for Admin
+    const verifiedAdmin = async(req,res,next)=>{
+      const adminRequester = req.decoded.email;
+      const adminRequesterMail = await userCollection.findOne({email: adminRequester});
+      if (adminRequesterMail.role ==='admin') {
+          next();
+      }
+      else{
+       res.status(403).send({message:"forbidden, Only admin can Access"});
+      }
+
+    }
+
     //GET DATA myOWN Inserted DATA
     app.get('/equitment', async (req, res) => {
       const query = {};
@@ -66,13 +79,12 @@ async function run() {
     //Inserted Individual Order data
     app.post('/order', async (req, res) => {
       const orders = req.body;
-      //Limit one order per user per product 
-      //(duplicate restricted)
+     /*  Limit one order per user per product 
       const query = { name: orders.name, customerMail: orders.customerMail }
       const existOrder = await orderCollection.findOne(query);
       if (existOrder) {
         return res.send({ success: false, orders: existOrder });
-      }
+      } */
       const result = await orderCollection.insertOne(orders);
       return res.send({ success: true, result });
     })
@@ -92,15 +104,15 @@ async function run() {
     })
 
     //Delete user Individual order data using email
-    app.delete('/parts/:email', [verifiedToken], async (req, res) => {
+    app.delete('/order/:email', verifiedToken, async (req, res) => {
       const email = req.params.email;
-      const filter = { email: email };
+      const filter = { customerMail: email };
       const result = await orderCollection.deleteOne(filter);
       res.send(result);
-    })
+    });
 
     //GET review myOWN Inserted DATA
-    app.get('/review', [verifiedToken],async (req, res) => {
+    app.get('/review',async (req, res) => {
       const query = {};
       const cursor = reviewCollection.find(query);
       const reviews = await cursor.toArray();
@@ -109,9 +121,16 @@ async function run() {
 
 
     //Customer review Stored
-    app.post('/review',[verifiedToken], async (req, res) => {
+    app.post('/review', async (req, res) => {
       const reviews = req.body;
       const result = await reviewCollection.insertOne(reviews);
+      res.send(result);
+    });
+
+    //Add product
+    app.post('/equitment',  async (req, res) => {
+      const addProduct = req.body;
+      const result = await partsCollection.insertOne(addProduct);
       res.send(result);
     });
 
@@ -136,7 +155,7 @@ async function run() {
     })
 
     // Given role:Admin on user 
-    app.put('/user/admin/:email',[verifiedToken], async (req, res) => {
+    app.put('/user/admin/:email',[verifiedToken, verifiedAdmin], async (req, res) => {
       const email = req.params.email;
       const filter = { email: email };
       const updateDoc = {
