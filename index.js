@@ -4,7 +4,8 @@ const cors = require('cors');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
 const port = process.env.PORT || 5000;
-const { MongoClient, ServerApiVersion, ObjectId, Admin } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId} = require('mongodb');
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
 
 app.use(cors());
@@ -46,6 +47,8 @@ async function run() {
     const orderCollection = client.db("fish-zone").collection("orders");
     const reviewCollection = client.db("fish-zone").collection("reviews");
     const userCollection = client.db("fish-zone").collection("users");
+    const paymentCollection = client.db("fish-zone").collection("payments");
+    
 
     //Middleware for Admin
     const verifiedAdmin = async(req,res,next)=>{
@@ -173,6 +176,44 @@ async function run() {
       const isAdmin = user.role === 'admin';
       res.send({ admin: isAdmin })
     })
+
+    // gET underscore Id for payment 
+    app.get('/order/:id', verifiedToken, async (req,res)=>{
+      const id = req.params.id;
+      const query = {_id: ObjectId(id)};
+      const ordered = await orderCollection.findOne(query);
+      res.send(ordered);
+
+    })
+    // PAYMENT GETWAY 
+    app.post('/create-payment-intent', verifiedToken, async (req,res)=>{
+      const { price } = req.body;
+      const amount = price*100;
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount : amount,
+        currency: 'usd',
+        payment_method_types : ['card']
+      });
+      res.send({clientSecret: paymentIntent.client_secret})
+    });
+
+      //PAYMENT DATA RESERVED IN DATABASE
+      app.patch('/order/:id', verifiedToken, async(req, res) =>{
+        const id  = req.params.id;
+        const payment = req.body;
+        const filter = {_id: ObjectId(id)};
+        const updatedDoc = {
+          $set: {
+            paid: true,
+            transactionId: payment.transactionId
+          }
+        }
+        const result = await paymentCollection.insertOne(payment);
+        const updatedBooking = await orderCollection.updateOne(filter, updatedDoc);
+        res.send(updatedBooking);
+      });
+
+
 
 
   }
